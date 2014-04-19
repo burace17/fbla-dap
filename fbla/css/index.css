@@ -1,0 +1,5 @@
+/* This just adds a bit of space between the top and bottom of the page */
+body {
+	padding-top: 50px;
+	padding-bottom: 20px;
+}

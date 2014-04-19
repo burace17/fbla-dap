@@ -1,0 +1,4 @@
+"3942","WASH","Emotional Intelligence","This workshop provides an introduction to the five key competencies of emotional intelligence","November 7","10:00AM"
+"4954","NEWO","Campaigning in Action","Learn fun innovative tips on running for office","November 14","12:00PM"
+"1104","NEWO","Conflict Management","Find out how to resolve conflict in this informative and interactive workshop","November 21","3:00PM"
+"9831","WASH","Career Competitiveness","Learn how social media competition and the economy are changing your career path","November 8","10:00AM"

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>NFLC Reports</title>
+		<!-- Using unicode -->
+		<meta charset="utf-8">
+		<!-- Set page width to the window width -->
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<!-- Link bootstrap -->
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+		<!-- Link some other page styles that we use -->
+		<link href="css/reports.css" rel="stylesheet">
+		<!-- Link jquery and some custom javascript -->
+		<script src="js/jquery-1.11.0.min.js"></script>
+		<script src="js/reports.js"></script>
+	</head>
+	<body>
+		<!-- Navigation bar. This just displays National fall leadership conference -->
+		<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+			<div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<a class="navbar-brand" href="index.html">National Fall Leadership Conference</a>
+				</div>
+				<div class="navbar-collapse collapse">
+					
+				</div>
+			</div>
+		</div>
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-sm-3 col-md-2 sidebar">
+					<ul class="nav nav-sidebar">
+						<li class="active"><a id="linkHome" href="#">Reports</a></li>
+						<li><a id="linkCParts" href="#">Conference Participants</a></li>
+						<li><a id="linkWkspParts" href="#">Workshop Participants</a></li>
+						<li><a id="linkPartSchedule" href="#">Participant Schedules</a></li>
+					</ul>
+				</div>
+				<div id="viewHome" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+					<div class="row">
+						<h3 class="page-header">Report Viewer</h3>
+						<p>To begin, select a report in the left pane</p>
+					</div>
+				</div>
+				<div id="viewCParts" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+					<div class="row">
+						<h3 class="page-header">Conference Participants</h3>
+						<label for="confSelect">Please select a conference:</label>
+						<select id="confSelect"></select>
+						<table class="table table-striped">
+							<thead>
+								<tr>
+									<th>Chapter Number</th>
+									<th>Participant Type</th>
+									<th>Last Name</th>
+								</tr>
+							</thead>
+							<tbody id="confPartTable">
+
+							</tbody>
+						</table>
+						<a id="btnNextChapter" class="btn btn-default" href="#" role="button">Next Chapter</a>
+					</div>
+				</div>
+				<div id="viewWkspParts" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+					<div class="row">
+						<h3 class="page-header">Workshop Participants</h3>
+						<label for="workSelect">Please select a workshop:</label>
+						<select id="workSelect"></select>
+						<table class="table table-striped">
+							<thead>
+								<tr>
+									<th>Participant Type</th>
+									<th>Last Name</th>
+									<th>Chapter Number</th>
+								</tr>
+							</thead>
+							<tbody id="workPartTable">
+
+							</tbody>
+						</table>
+						<a id="btnNextWorkshop" class="btn btn-default" href="#" role="button">Next Workshop</a>	
+					</div>
+				</div>
+				<div id="viewPartSchedule" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+					<div class="row">
+						<h3 class="page-header">Participant Schedules</h3>
+						<label for="partSelect">Please select a participant:</label>
+						<select id="partSelect"></select>
+						<table class="table table-striped">
+							<thead>
+								<tr>
+									<th>Workshop</th>
+									<th>Time</th>
+								</tr>
+							</thead>
+						</table>
+					</div>
+				</div>
+				
+			</div>
+		</div>
+		<!-- Link the bootstrap-specific javascript -->
+		<script src="js/bootstrap.min.js"></script>
+	</body>
+</html>
