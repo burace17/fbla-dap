@@ -16,11 +16,14 @@ $(document).ready(function() {
 			for (var ix in linArray) {
 				linArray[ix] = replaceAll(linArray[ix],"\"","");
 			}
-			participants[linArray[0]] = {
-				firstName: linArray[3],
-				lastName: linArray[4]
-			};
-			$("#participantSelect").append("<option value=\"" + linArray[0] + "\">" + participants[linArray[0]].firstName + " " + participants[linArray[0]].lastName + "</option>");
+			// Fix issue #6 - 4/19
+			if (linArray.length == 6) {
+				participants[linArray[0]] = {
+					firstName: linArray[3],
+					lastName: linArray[4]
+				};
+				$("#participantSelect").append("<option value=\"" + linArray[0] + "\">" + participants[linArray[0]].firstName + " " + participants[linArray[0]].lastName + "</option>");
+			}
 		}
 	});
 	for (var i in workshops) {
