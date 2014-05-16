@@ -1,4 +1,4 @@
 fbla-dap
 ========
 
-FBLA Desktop Application Programming
+This was my entry for FBLA Desktop Application Programming.
