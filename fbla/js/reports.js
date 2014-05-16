@@ -1,22 +1,14 @@
-// This file contains a lot of code may be overly complicated
-// This is due to the fact that I've never coded someting like this before
-// and am not really sure of the best way to do it. 
-// I'm trying my best not to write extremely dirty code ..but
-// ..there's still a lot here.
-
 var fs = require("fs");
 var os = require("os");
-// Begin (evil) global variables
-// Get the objects in session storage
-var conferences = JSON.parse(sessionStorage.getItem("conferences"));
-var participantTypes = JSON.parse(sessionStorage.getItem("participantTypes"));
-var workshops = JSON.parse(sessionStorage.getItem("workshops"));
+var fbladata = require("./js/fbladata.js");
+var gui = require("nw.gui");
+var win = gui.Window.get();
+var async = require("async");
 
-// These variables deal with the conference participants report
-var chapterNumber = 0;
-var participants = [];
-var validChapterNumbers = [];
-var chapterNumberIndex = 0;
+// Sorting stuff
+var sortField = "chapterNumber ";
+var direction = "ASC";
+
 $(document).ready(function() {
 	// We use javascript to hide these elements instead of css because jquery will save their original display values
 	$("#viewCParts").hide();
@@ -30,172 +22,179 @@ $(document).ready(function() {
 		$(this.parentNode).addClass("active");
 		$("#viewHome").show();
 	});
+	// CONFERENCE PARTICIPANTS
 	$("#linkCParts").click(function() {
 		hideViews();
 		$(this.parentNode).addClass("active");
 		// Clear drop down menu
 		$("#confSelect").empty();
-		// Clear table
-		$("#confPartTable").remove();
-		// Populate the conferences drop down menu, works just like the one on the registration page
-		for (var i in conferences) {
-			if (conferences.hasOwnProperty(i)) {
-				$("#confSelect").append("<option value=\"" + i + "\">" + conferences[i].location + "</option>");
-			}
-		}
-		fs.readFile("data/PARTICIPANTS.txt", function(err, data) {
-			if (err) {
-				// The file does not exist
-				$("#confSelect").after("<p class=\"bg-danger frmError\">No participants found</p>");
-				return;
-			}
-			$(".frmError").remove();
-			// Now we need to populate the participants object, just like we populated the conferences object in index.js
-			var dataArray = data.toString().split(os.EOL);
-			for (var i in dataArray) {
-				// Split each line by comma
-				var linArray = dataArray[i].toString().split(",");
-				// Remove double quotes left over from the text file
-				for (var ix in linArray) {
-					linArray[ix] = replaceAll(linArray[ix],"\"","");
-				}
-				
-				// Now to place each line into the participants array
-				
-				// The code gets crazy from here on out.
-				// This is a multidimensional array. I use the first array's index as sort of a primary key
-				// so I can find all of the participants from each chapter
-				// Then I push an object that contains each participants' information
-				if (participants[linArray[5]] == null) participants[linArray[5]] = [];
-				participants[linArray[5]].push({
-					num: linArray[0],
-					confCode: linArray[1],
-					type: linArray[2],
-					firstName: linArray[3],
-					lastName: linArray[4] 
-				});
-				// I'm not proud of this, but the only way I could think of to keep track of all of the 
-				// chapter numbers was to create a separate array, which is a list of the valid ones.
-				// This is why I shouldn't code late at night.
-				if (linArray[5] != null || linArray[5] != undefined) {
-					validChapterNumbers.push(linArray[5]);
-				}
-			}
-			// This removes any duplicates from the new array
-			validChapterNumbers = removeDuplicates(validChapterNumbers);
-			// Now we populate the table. Beware: populateTable() is scary.
-			populateTable();
-		});	
+		$("#chapSelect").empty();
+		var db = fbladata.getDB();
+		db.serialize(function() {
+			db.each("SELECT * FROM conferences", function(err, row) {
+				$("#confSelect").append("<option value=\"" + row.id + "\">" + row.location + "</option>");
+			}, function() {
+				$("#confSelect").prepend("<option value=\"all\">Show All</option>");	
+			});
+			db.each ("SELECT chapterNumber FROM participants ORDER BY chapterNumber ASC", function(err, row) {
+				$("#chapSelect").append("<option value=\"" + row.chapterNumber + "\">" + row.chapterNumber + "</option>");
+			}, function() {
+				$("#chapSelect").prepend("<option value=\"all\">Show All</option");
+				populateConfPartTable();
+			});
+			
+		});
 		// Show the page
 		$("#viewCParts").show();
 	});
+	// WORKSHOP PARTICIPANTS
 	$("#linkWkspParts").click(function() {
 		hideViews();
 		$(this.parentNode).addClass("active");
-		for (var i in workshops) {
-			if (workshops.hasOwnProperty(i)) {
-				$("#workSelect").append("<option value=\"" + i + "\">" + workshops[i].name + "</option>");
-			}
-		}
-				$("#workSelect").after("<p class=\"bg-danger frmError\">No registrations found</p>");
+		// Clear drop down menu
+		$("#workSelect").empty();
+		var db = fbladata.getDB();
+		db.serialize(function() {
+			db.each("SELECT id,name FROM workshops", function(err, row) {
+				$("#workSelect").append("<option value=\"" + row.id + "\">" + row.name + "</option>");
+			}, function() {
+				populateWkspPartTable();	
+			});
+		});
 		$("#viewWkspParts").show();
 	});
+	// PARTICIPANT SCHEDULES
 	$("#linkPartSchedule").click(function() {
 		hideViews();
 		$(this.parentNode).addClass("active");
+		// Clear drop down menu
+		$("#partSelect").empty();
+		var db = fbladata.getDB();
+		db.serialize(function() {
+			db.each("SELECT id,firstName,lastName FROM participants ORDER BY firstName ASC", function(err, row) {
+				$("#partSelect").append("<option value=\"" + row.id + "\">" + row.firstName + " " + row.lastName + "</option>");
+			}, function() {
+				populatePartTable();	
+			});
+		});
 		$("#viewPartSchedule").show();
 	});	
-	// Event handlers for the buttons
-	$("#btnNextChapter").click(function() {
-		chapterNumber = validChapterNumbers[chapterNumberIndex + 1];
-		populateTable();
-	});
-	$("#btnPrevChapter").click(function() {
-		chapterNumber = validChapterNumbers[chapterNumberIndex - 1];
-		populateTable();
-	});
 	// Update table when drop down is changed
 	$("#confSelect").change(function() {
-		chapterNumberIndex = 0;
-		chapterNumber = validChapterNumbers[0];
-		populateTable();
+		populateConfPartTable();
+	});
+	$("#chapSelect").change(function() {
+		populateConfPartTable();
+	});
+	$("#workSelect").change(function() {
+		populateWkspPartTable();
+	});
+	$("#partSelect").change(function() {
+		populatePartTable();
+	});
+	$("#sortChap").click(function() {
+		// Don't forget to add the space
+		sortField = "chapterNumber ";
+		directionToggle();
+		populateConfPartTable();
+	});
+	$("#sortPart").click(function() {
+		sortField = "type ";
+		directionToggle();
+		populateConfPartTable();
+	});
+	$("#sortlName").click(function() {
+		sortField = "lastName ";
+		directionToggle();
+		populateConfPartTable();
+	});
+	$("#sortfName").click(function() {
+		sortField = "firstName ";
+		directionToggle();
+		populateConfPartTable();
 	});
 });
-function populateTable() {
-	// I'll try to explain this mess
-	var shouldContinue = false;
-	// We start out by iterating over all of the valid chapters
-	for (var i = 0; i < validChapterNumbers.length; i++) {
-		shouldContinue = false;
-		// Enable the buttons if needed
-		$("#btnPrevChapter").removeAttr("disabled");
-		$("#btnNextChapter").removeAttr("disabled");
-		// Debug stuff
-		//console.log("i: " + i);
-		//console.log("cn: " +chapterNumber);
-		//console.log("index: " +chapterNumberIndex);
-		//console.log(validChapterNumbers);
-		// If this is our first time, disable the previous chapter button
-		if (chapterNumber == 0) {
-			// Set chapter number to the first item in the valid array
-			chapterNumber = validChapterNumbers[i];
-			$("#btnPrevChapter").attr("disabled", "disabled");
-		}
-		// These don't work quite right and I don't have time to figure out why.
-		// You'll see when you run the program. They work sometimes.
-		// They are supposed to disable and enable the buttons when necessary
-		if (validChapterNumbers[chapterNumberIndex + 1] == null) {
-			$("#btnNextChapter").attr("disabled", "disabled");
-		}
-		if (validChapterNumbers[chapterNumberIndex - 1] == null) {
-			$("#btnPrevChapter").attr("disabled", "disabled");
-		}
-		// Is this the chapter we are looking for?
-		if (chapterNumber == validChapterNumbers[i]) {
-			chapterNumberIndex = i;
-			// This loop handles multiple entries per chapter
-			for (var ix = 0; ix < participants[validChapterNumbers[i]].length; ix++) {
-				//console.log(participants[validChapterNumbers[i]][ix].confCode);
-				// Is this the right conference?
-				if ($("#confSelect").val() == participants[validChapterNumbers[i]][ix].confCode) {
-					// Yep, append to the table
-					$("#confPartTable").append("<tr>" +
-						"<td>"+validChapterNumbers[i]+"</td>" +
-						"<td>"+participantTypes[participants[validChapterNumbers[i]][ix].type].description+"</td>" + 
-						"<td>"+participants[validChapterNumbers[i]][ix].lastName+"</td></tr>");
-				} else {
-					// Nope, wrong conference. Keep looping until we hit a good one.
-					shouldContinue = true;
-					break;
+function populatePartTable() {
+	// Clear the table
+	$(".frmError").remove();
+	$("#partTable tr").remove();
+	var db = fbladata.getDB();
+	db.serialize(function() {
+		db.each("SELECT workshops.name,workshops.date,workshops.time FROM workshops,wkshpRegistrations " + 
+			"WHERE wkshpRegistrations.participantID = '" + $("#partSelect").val() + "' AND " +
+		        "workshops.id = wkshpRegistrations.id ORDER BY date,time ASC", function(err, row) {
+			$("#partTable").append("<tr><td>" + row.name + "</td><td>" + row.date + "</td><td>" + row.time + "</td></tr>");
+		}, function() {
+			db.each("SELECT conference FROM participants WHERE id = "+$("#partSelect").val(), function(err, row) {
+				if (row.conference == "WASH") {
+					$("#partTable").prepend("<tr><td>Opening Session</td><td>November 7</td><td>8:00AM</td></tr>");
+					$("#partTable").append("<tr><td>Closing Session</td><td>November 8</td><td>7:00PM</td></tr>");	
 				}
-			}
-			if (shouldContinue) { /* Loop again */ chapterNumberIndex++; chapterNumber = validChapterNumbers[chapterNumberIndex]; continue; }
-			if (!shouldContinue) { 
-				// We're done
-				// Sort the table and get out
-				// TODO: fix the sorting..
-				$("td").sortElements(function(a,b) {
-					return parseInt($(a).text(), 10) & parseInt($(b).text(), 10) ? 1 : -1;
-				});
-				return; 
-			}
-		}
-	}
-	
+				if (row.conference == "MINN") {
+					$("#partTable").prepend("<tr><td>Opening Session</td><td>November 14</td><td>8:00AM</td></tr>");
+					$("#partTable").append("<tr><td>Closing Session</td><td>November 15</td><td>7:00PM</td></tr>");
+				}
+				if (row.conference == "NEWO") {
+					$("#partTable").prepend("<tr><td>Opening Session</td><td>November 21</td><td>8:00AM</td></tr>");
+					$("#partTable").append("<tr><td>Closing Session</td><td>November 22</td><td>7:00PM</td></tr>");
+				}
+			});
+		
+		});	
+	});
 }
-// This removes duplicates from arrays
-function removeDuplicates(arr) {
-	var i;
-      	var len = arr.length;
-        var out = [];
-        var obj = {};
-	for (var i = 0; i < len; i++) {
-    		obj[arr[i]] = 0;
-  	}
-  	for (i in obj) {
-    		out.push(i);
-  	}
-  	return out;
+function populateConfPartTable() {
+	var showAllConf = $("#confSelect").val() == "all";
+	var showAllChap =  $("#chapSelect").val() == "all";
+	// Clear the table
+	$(".frmError").remove();
+	$("#confPartTable tr").remove();
+	var db = fbladata.getDB();
+	db.serialize(function() {
+		if (showAllConf || showAllChap) {
+			if (showAllConf && showAllChap) {
+				db.each("SELECT lastName,firstName,type,chapterNumber FROM participants ORDER BY " + sortField + direction, function(err, row) {
+					var type = fixType(row.type);
+					$("#confPartTable").append("<tr><td>" + row.chapterNumber + "</td><td>" + type + "</td><td>" + row.lastName + 
+						"</td><td>" + row.firstName + "</td></tr>");
+				});
+			} else if (showAllConf) {
+				db.each("SELECT lastName,firstName,type,chapterNumber FROM participants WHERE chapterNumber = " + 
+					$("#chapSelect").val() + " ORDER BY " + sortField + direction, function(err, row) {
+					var type = fixType(row.type);
+					$("#confPartTable").append("<tr><td>" + row.chapterNumber + "</td><td>" + type + "</td><td>" + row.lastName + 
+						"</td><td>" + row.firstName + "</td></tr>");
+				});
+			} else if (showAllChap) {
+				db.each("SELECT lastName,firstName,type,chapterNumber FROM participants WHERE conference = '" + 
+					$("#confSelect").val() + "' ORDER BY " + sortField + direction, function(err,row) {
+					var type = fixType(row.type);
+					$("#confPartTable").append("<tr><td>" + row.chapterNumber + "</td><td>" + type + "</td><td>" + row.lastName + 
+						"</td><td>" + row.firstName + "</td></tr>");
+				});	
+			}
+		} else {
+			db.each("SELECT firstName,lastName,type,chapterNumber FROM participants WHERE chapterNumber = " + $("#chapSelect").val() +
+				" AND conference = '" + $("#confSelect").val() + "' ORDER BY " + sortField + direction, function(err,row) {
+				var type = fixType(row.type);
+				$("#confPartTable").append("<tr><td>" + row.chapterNumber + "</td><td>" + type + "</td><td> " + row.lastName + 
+					"</td><td>" + row.firstName + "</td></tr>");
+			});
+		}
+	});
+}
+function populateWkspPartTable() {
+	$(".frmError").remove();
+	$("#workPartTable tr").remove();
+	var db = fbladata.getDB();
+	db.serialize(function() {
+		db.each("SELECT participants.type,participants.lastName,participants.chapterNumber FROM participants,wkshpRegistrations " +
+			"WHERE wkshpRegistrations.participantID = participants.id AND wkshpRegistrations.id = '" + $("#workSelect").val() + "'",
+		       function(err, row) {
+			       	var type = fixType(row.type);
+				$("#workPartTable").append("<tr><td>" + type + "</td><td>" + row.lastName + "</td><td>" + row.chapterNumber + "</td></tr>");
+		       });	       
+	});
 }
 function hideViews() {
 	// Clear the active sidebar item
@@ -205,25 +204,52 @@ function hideViews() {
 	$("#viewWkspParts").hide();
 	$("#viewPartSchedule").hide();
 }
-
-// This function replaces ALL occurrances of the specified string
-function replaceAll(str, search, replacement) {
-        return str.split(search).join(replacement);
+// This toggles the sort direction variable
+function directionToggle() {
+	direction = (direction == "ASC") ? "DESC" : "ASC";
 }
-// Sort plugin for jquery
-jQuery.fn.sortElements = (function() {
-	var sort = [].sort;
-	return function(comparator, getSortable) {
-		getSortable = getSortable || function() { return this; };
-		var placements = this.map(function() {
-			var sortElement = getSortable.call(this);
-			var parentNode = sortElement.parentNode;
-			nextSibling = parentNode.insertBefore(document.createTextNode(''),sortElement.nextSibling);
-			return function() {
-				if (parentNode === this) { alert("An error occurred while sorting"); }
-				parentNode.insertBefore(this, nextSibling);
-				parentNode.removeChild(nextSibling);
+// This function converts a type ID to a user-friendly label
+function fixType(type) {
+	if (type == "M") return "Member";
+	if (type == "G") return "Guest";
+	if (type == "A") return "Adviser";
+}
+win.on("close", function() {
+	// Have we already saved?
+	if (sessionStorage.getItem("saved") == "true") { this.close(true); return; }
+	var c = confirm("Would you like to save changes made to the data files? Press OK to save and Cancel to not save");
+	// User does not want to save.
+	if (!c) { this.close(true); return; }
+	// Hide the window while we clean up
+	this.hide();
+	// Merge the SQL database with the local data files
+	// We will overwrite all of them
+	var db = fbladata.getDB();
+	db.serialize(function() {
+		async.parallel([
+			function(callback) {
+				fs.openSync("data/PARTICIPANTS.txt", "w");
+				db.each("SELECT * FROM participants", function (err, row) {
+					var data = '"' + row.id + '","' + row.conference + '","' + 
+						row.type + '","' + row.firstName + '","' + row.lastName +
+						'","' + row.chapterNumber + '"' + os.EOL;	
+					fs.appendFileSync("data/PARTICIPANTS.txt", data, "utf8");
+				}, function() {
+					callback();	
+				});
+			},
+			function(callback) {
+				fs.openSync("data/WKSHP_REGISTRATIONS.txt", "w");
+				db.each("SELECT * FROM wkshpRegistrations", function(err, row) {
+					var data = '"' + row.id + '","' + row.participantID + '"' + os.EOL;
+					fs.appendFileSync("data/WKSHP_REGISTRATIONS.txt", data, "utf8");
+				}, function() {
+					callback();	
+				});	
 			}
-		});
-	};
-})();
+
+			], function(err) {
+				win.close(true);	
+			});
+		});	
+});

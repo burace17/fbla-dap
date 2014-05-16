@@ -1,8 +1,9 @@
 {
-	"name": "NFLC Registration",
-	"main": "index.html",
+	"name": "NFLCRegistration",
+	"main": "main.html",
+	"chromium-args": "--disable-web-security",
 	"window": {
-		"toolbar": true,
+		"toolbar": false,
 		"width": 800,
 		"height": 600
 	}

@@ -13,6 +13,13 @@
 		<!-- Link jquery and some custom javascript -->
 		<script src="js/jquery-1.11.0.min.js"></script>
 		<script src="js/reports.js"></script>
+		<style>
+			/* Reversed caret for ascending sorts */
+			.caret.caret-reversed {
+				border-top-width: 0;
+				border-bottom: 4px solid #000000;
+			}
+		</style>
 	</head>
 	<body>
 		<!-- Navigation bar. This just displays National fall leadership conference -->
@@ -40,6 +47,7 @@
 						<li><a id="linkCParts" href="#">Conference Participants</a></li>
 						<li><a id="linkWkspParts" href="#">Workshop Participants</a></li>
 						<li><a id="linkPartSchedule" href="#">Participant Schedules</a></li>
+						<li><a href="index.html">Go Back</a></li>
 					</ul>
 				</div>
 				<div id="viewHome" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
@@ -51,21 +59,24 @@
 				<div id="viewCParts" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
 					<div class="row">
 						<h3 class="page-header">Conference Participants</h3>
-						<label for="confSelect">Please select a conference:</label>
-						<select id="confSelect"></select>
+						<label for="confSelect">Filter by Conference:</label>
+						<select id="confSelect"></select><br />
+						<label for="chapSelect">Filter by Chapter:</label>
+						<select id="chapSelect"></select><br />
+						<em>Note: You may sort the results by clicking on the column headings</em>
 						<table class="table table-striped">
 							<thead>
 								<tr>
-									<th>Chapter Number</th>
-									<th>Participant Type</th>
-									<th>Last Name</th>
+									<th><a id="sortChap" href="#">Chapter Number</a></th>
+								<th><a id="sortPart" href="#">Participant Type</a></th>
+								<th><a id="sortlName" href="#">Last Name</a></th>
+								<th><a id="sortfName" href="#">First Name</a></th>
 								</tr>
 							</thead>
 							<tbody id="confPartTable">
 
 							</tbody>
 						</table>
-						<a id="btnNextChapter" class="btn btn-default" href="#" role="button">Next Chapter</a>
 					</div>
 				</div>
 				<div id="viewWkspParts" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
@@ -85,7 +96,6 @@
 
 							</tbody>
 						</table>
-						<a id="btnNextWorkshop" class="btn btn-default" href="#" role="button">Next Workshop</a>	
 					</div>
 				</div>
 				<div id="viewPartSchedule" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
@@ -96,10 +106,14 @@
 						<table class="table table-striped">
 							<thead>
 								<tr>
-									<th>Workshop</th>
+									<th>Event</th>
+									<th>Date</th>
 									<th>Time</th>
 								</tr>
 							</thead>
+							<tbody id="partTable">
+							
+							</tbody>
 						</table>
 					</div>
 				</div>
